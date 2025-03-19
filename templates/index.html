@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control Grid</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .grid-button {
+            width: 80px;
+            height: 80px;
+            border: 1px solid #ccc;
+            background-color: lightgray;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .led-button {
+            color: white;
+        }
+        .red-led { background-color: red; }
+        .green-led { background-color: green; }
+        .disabled {
+            background-color: darkgray !important;
+            cursor: not-allowed;
+        }
+    </style>
+    <script>
+        let redState = false;  // False = OFF, True = ON
+        let greenState = false; // False = OFF, True = ON
+
+        function toggleLED(color) {
+            let action;
+            if (color === "red") {
+                action = redState ? "OFF" : "ON";
+                redState = !redState;
+                document.getElementById("red-btn").innerText = redState ? "Turn OFF" : "Turn ON";
+            } else if (color === "green") {
+                action = greenState ? "GOFF" : "GON";
+                greenState = !greenState;
+                document.getElementById("green-btn").innerText = greenState ? "Turn OFF" : "Turn ON";
+            }
+
+            fetch('/led', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action })
+            });
+        }
+
+        function checkTouchStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    let redBtn = document.getElementById("red-btn");
+                    let greenBtn = document.getElementById("green-btn");
+
+                    if (data.touch_detected) {
+                        redBtn.disabled = false;
+                        redBtn.classList.remove("disabled");
+                    } else {
+                        redBtn.disabled = true;
+                        redBtn.classList.add("disabled");
+                    }
+
+                    if (data.touch_detected2) {
+                        greenBtn.disabled = false;
+                        greenBtn.classList.remove("disabled");
+                    } else {
+                        greenBtn.disabled = true;
+                        greenBtn.classList.add("disabled");
+                    }
+                });
+        }
+
+        setInterval(checkTouchStatus, 1000); // Check every second
+    </script>
+</head>
+<body>
+    <h1>Control the LEDs</h1>
+
+    <div class="grid-container">
+        {% for row in range(3) %}
+            {% for col in range(3) %}
+                {% if row == 1 and col == 0 %}
+                    <!-- Red LED Control Button -->
+                    <button id="red-btn" class="grid-button led-button red-led disabled" onclick="toggleLED('red')" disabled>Turn ON</button>
+                {% elif row == 1 and col == 2 %}
+                    <!-- Green LED Control Button -->
+                    <button id="green-btn" class="grid-button led-button green-led disabled" onclick="toggleLED('green')" disabled>Turn ON</button>
+                {% else %}
+                    <!-- Dummy Buttons -->
+                    <button class="grid-button">X</button>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+</body>
+</html>
